@@ -193,10 +193,6 @@ Data WDRS_ALL;
 	if event_id = "104270087" then lhj_case_id = "202220060";
 	if event_id = "104384842" then lhj_case_id = "202220091";
 
-	/*if event_id = "104384842" then lhj_case_id = "202220091"; << This case appeared as an error, attempting to fix error but
-	lhj_case_id is the same as for 104270087*/
-
-
 RUN;
 
 
@@ -213,8 +209,7 @@ as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classificati
 	Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(Onset_Dt) as onset_dt format=date9.,
 coalesce(datepart(Onset_Dt), datepart(report_dt)) as Event_date format=date9.
 From Recon.cdx
-/*where (Report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);
-***Filtering out of range cases later on in code- line 687;*/
+where (Report_dt>='01DEC2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -233,7 +228,7 @@ create table CDDB_ENTX
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(onset_dt) as onset_dt format=date9., 
 coalesce(datepart(Onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.ENTX
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01DEC2019'd and report_dt<='31DEC2021'd);
 quit;
 
 PROC SQL;
@@ -251,7 +246,7 @@ create table CDDB_HEPX
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(onset_dt) as onset_dt format=date9.,
 coalesce (datepart(onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.HEPX
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01DEC2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -260,7 +255,7 @@ CREATE TABLE CDDB_HEPX1
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, Batch_Dt, type1, wdrs_id, datepart(onset_dt) as onset_dt format=date9., 
 coalesce (datepart(onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.CDDB_Core_Data
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01DEC2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -707,10 +702,9 @@ run;/
 /*2022 EXCEPTIONS CAN BE ADDED HERE */
 /*Case-specific*/
 If 	reason = "WDRS record doesn't match to CDDB" and (event_id="101803984" or event_id="102669670") then reason = "Ok";
-If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or "102682080") then reason="Ok";
+If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or event_id= "102682080") then reason="Ok";
 where drop ne 1;
 run;
-
 
 
 
@@ -837,7 +831,7 @@ Proc sql;
 create table merged_all5d as select a.*, b.*
 from merged_all5d as a
 left join admin_tab1 as b
-on a.dbid = b.dbid; 
+on a.dbid = input(b.dbid, 10.); 
 quit;
 
 
@@ -868,7 +862,7 @@ Proc sql;
 create table merged_all5b as select a.*, b.*
 from merged_all5b as a
 left join admin_tab2 as b
-on a.dbid = b.dbid and a.event_id = b.event_id; 
+on a.dbid = input(b.dbid, 10.) and a.event_id = b.event_id; 
 quit;
 
 proc export data= MERGED_ALL5b (where=(reason="Data mismatch - name"))
@@ -900,7 +894,7 @@ Proc sql;
 create table merged_all5c as select a.*, b.*
 from merged_all5c as a
 left join admin_tab3 as b
-on a.dbid = b.dbid; 
+on a.dbid = input(b.dbid, 10.); 
 quit;
 
 proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate"))
@@ -931,7 +925,7 @@ Proc sql;
 create table merged_all5e as select a.*, b.*
 from merged_all5e as a
 left join admin_tab4 as b
-on a.dbid = b.dbid and a.event_id=b.event_id; 
+on a.dbid = input(b.dbid, 10.) and a.event_id=b.event_id; 
 quit;
 
 proc export data= merged_all5E (where=(reason = "WDRS missing case complete date" OR reason= "WDRS investigation status issue"))
