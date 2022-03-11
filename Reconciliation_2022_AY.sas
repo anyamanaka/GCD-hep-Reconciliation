@@ -17,7 +17,6 @@ Data sources:
 /*********Start import WDRS core tables *********/
 
 
-
 *READING IN WDRS;
 PROC IMPORT OUT = WDRS_CORE_DUPS
 	DATAFILE = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Exports\CORE_EXPORT_BAER_P.xlsx"
