@@ -783,8 +783,7 @@ data merged_all5;
  run;
 
 
-
-proc freq data = merged_all5; tables disease; run; 
+proc freq data = merged_all5; tables reason; run; 
 
 PROC EXPORT DATA = MERGED_ALL5
 	dbms = csv replace
@@ -830,7 +829,7 @@ Proc sql;
 create table merged_all5d as select a.*, b.*
 from merged_all5d as a
 left join admin_tab1 as b
-on a.dbid = input(b.dbid, 10.); 
+on a.dbid = b.dbid; 
 quit;
 
 
@@ -861,7 +860,7 @@ Proc sql;
 create table merged_all5b as select a.*, b.*
 from merged_all5b as a
 left join admin_tab2 as b
-on a.dbid = input(b.dbid, 10.) and a.event_id = b.event_id; 
+on a.dbid = b.dbid and a.event_id = b.event_id; 
 quit;
 
 proc export data= MERGED_ALL5b (where=(reason="Data mismatch - name"))
@@ -893,7 +892,7 @@ Proc sql;
 create table merged_all5c as select a.*, b.*
 from merged_all5c as a
 left join admin_tab3 as b
-on a.dbid = input(b.dbid, 10.); 
+on a.dbid = b.dbid; 
 quit;
 
 proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate"))
@@ -924,7 +923,7 @@ Proc sql;
 create table merged_all5e as select a.*, b.*
 from merged_all5e as a
 left join admin_tab4 as b
-on a.dbid = input(b.dbid, 10.) and a.event_id=b.event_id; 
+on a.dbid = b.dbid and a.event_id=b.event_id; 
 quit;
 
 proc export data= merged_all5E (where=(reason = "WDRS missing case complete date" OR reason= "WDRS investigation status issue"))
@@ -1025,7 +1024,7 @@ PROC EXPORT DATA = hist5
 	outfile =  "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\case_list_hist.csv";
 RUN;
 
-
+proc freq data=merged_all5; tables reason; run;
 
 /*END PART 2*/
 
