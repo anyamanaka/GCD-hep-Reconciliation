@@ -704,6 +704,9 @@ run;/
 /*Case-specific*/
 If 	reason = "WDRS record doesn't match to CDDB" and (event_id="101803984" or event_id="102669670") then reason = "Ok";
 If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or event_id= "102682080") then reason="Ok";
+If reason = "CDDB record doesn't match to WDRS" and (dbid="202112088" or dbid="202112095" or dbid="202112108" or dbid= "202112113" or dbid="202110676" 
+	or dbid="202111470" or dbid="202133372") then reason="Ok";
+If reason ="CDDB missing case complete date" and dbid="202131016" then reason="Ok";
 where drop ne 1;
 run;
 
@@ -779,8 +782,9 @@ data merged_all5;
  if disease = "OTH" and assigned_to="Admin" then assigned_to = "AI Team";
  if disease = "OTH" and reason="Data mismatch - name" then assigned_to = "Admin";
  if dbid in ("202110292" "202110380" "202110500" "202110665" "202111036" "202111175" "202111411" "202111510" "202111752" 
-			"202111928" "202112050" "202112277") then assigned_to= "Investigator";
+			"202111928" "202112050" "202112277" "202120747") then assigned_to= "Investigator";
  if event_id in ("101666414" "102617496" "103778992") then assigned_to = "Investigator";
+ if dbid= "202120838" then assigned_to="AI Team";
  run;
 
 
