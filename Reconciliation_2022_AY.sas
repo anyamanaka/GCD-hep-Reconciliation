@@ -705,7 +705,8 @@ run;/
 If 	reason = "WDRS record doesn't match to CDDB" and (event_id="101803984" or event_id="102669670") then reason = "Ok";
 If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or event_id= "102682080") then reason="Ok";
 If reason = "CDDB record doesn't match to WDRS" and (dbid="202112088" or dbid="202112095" or dbid="202112108" or dbid= "202112113" or dbid="202110676" 
-	or dbid="202111470" or dbid="202133372") then reason="Ok";
+	or dbid="202111470" or dbid="202133372" or dbid="202110676" or dbid="202111470" or dbid="202133372" or dbid="202110123" or dbid="202110790" or dbid="202110809" 
+ 	or dbid= "202110885" or dbid="202111373" or dbid="202120691" or dbid="202120965") then reason="Ok";
 If reason ="CDDB missing case complete date" and dbid="202131016" then reason="Ok";
 where drop ne 1;
 run;
@@ -888,7 +889,7 @@ Data admin_tab3;
 Set admin_tab3 (keep= dbid comments);
 run;
 
-DATA MERGED_ALL5C (KEEP= event_id dbid disease investigator_combined report_date birthdate_wdrs birthdate_cddb reason);
+DATA MERGED_ALL5C (KEEP= event_id dbid disease investigator_combined report_date birthdate_wdrs birthdate_cddb assigned_to reason);
 	RETAIN event_id DBID disease investigator_combined report_date birthdate_cddb birthdate_wdrs reason comments;
 	SET MERGED_ALL5;
 	RUN;	
@@ -900,7 +901,7 @@ left join admin_tab3 as b
 on a.dbid = b.dbid; 
 quit;
 
-proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate"))
+proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate" and assigned_to="Admin"))
 	dbms = xlsx replace
 	outfile = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\admin_reconciliation.xlsx";
 	sheet = "DOB Mismatch";
