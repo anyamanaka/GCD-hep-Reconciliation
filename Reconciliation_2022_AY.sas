@@ -983,7 +983,7 @@ proc export data= merged_all5_AI (where=(assigned_to= "AI Team"))
 /*Create longitudinal dataset to show progress over time*/
 proc import datafile='S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\case_list_hist.csv' out=hist0
                dbms=csv replace;
-guessingrows=10000;
+guessingrows=max;
 run;
 
 /*If export date = today then drop*/
