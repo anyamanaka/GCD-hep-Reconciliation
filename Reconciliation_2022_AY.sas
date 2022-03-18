@@ -1,7 +1,7 @@
 /**********************************************************
 RECONCILIATION TABLEAU DASHBOARD
 Author: Jenny Lenahan
-Last modified: 3/09/2022(AY)
+Last modified: 3/18/22 (JL)(AY)
 
 
 Data sources:
@@ -15,7 +15,6 @@ Data sources:
 /*ALERT! CHANGE FILE PATHS TO POINT TO 2OXX FOLDER*/
 
 /*********Start import WDRS core tables *********/
-
 
 
 *READING IN WDRS;
@@ -106,6 +105,8 @@ RUN;
 DATA WDRS_ALL;
 	SET WDRS_ALL;
 	Disease_WDRS = Disease; 
+	cdc_event_date = event_date;
+	format cdc_event_date mmddyy10.;
 RUN;
 
 *Disease name matching (may not be necessary if matching on DBID);
@@ -159,6 +160,7 @@ DATA WDRS_ALL;
 	IF Disease_WDRS = "Shigellosis" THEN Disease = "SHI";
 	IF Disease_WDRS = "Tetanus" THEN Disease = "TET";
 	*IF Disease_WDRS = "Tickborne (excludes Lyme, Relapsing)" THEN Disease = "QFE" or "OTH" or "BAB"...;
+	IF Disease_WDRS = "Trichinosis" THEN Disease = "TRI";
 	IF Disease_WDRS = "Tularemia" THEN Disease = "TUL";
 	IF Disease_WDRS = "Typhoid fever" THEN Disease = "TYP";
 	IF Disease_WDRS = "Vibriosis" THEN Disease = "VIB";
@@ -192,10 +194,7 @@ Data WDRS_ALL;
 	if event_id = "104219989" then lhj_case_id = "202220053";
 	if event_id = "104270087" then lhj_case_id = "202220060";
 	if event_id = "104384842" then lhj_case_id = "202220091";
-
-	/*if event_id = "104384842" then lhj_case_id = "202220091"; << This case appeared as an error, attempting to fix error but
-	lhj_case_id is the same as for 104270087*/
-
+	else if event_id = "104776789" then lhj_case_id = "202220211";
 
 RUN;
 
@@ -213,8 +212,7 @@ as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classificati
 	Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(Onset_Dt) as onset_dt format=date9.,
 coalesce(datepart(Onset_Dt), datepart(report_dt)) as Event_date format=date9.
 From Recon.cdx
-/*where (Report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);
-***Filtering out of range cases later on in code- line 687;*/
+where (Report_dt>='01JAN2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -233,7 +231,7 @@ create table CDDB_ENTX
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(onset_dt) as onset_dt format=date9., 
 coalesce(datepart(Onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.ENTX
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01JAN2019'd and report_dt<='31DEC2021'd);
 quit;
 
 PROC SQL;
@@ -251,7 +249,7 @@ create table CDDB_HEPX
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, summary, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, RecComp_Dt, Batch_Dt, type1, datepart(onset_dt) as onset_dt format=date9.,
 coalesce (datepart(onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.HEPX
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01JAN2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -260,7 +258,7 @@ CREATE TABLE CDDB_HEPX1
 as select dbid, cdi, Last_Nm, First_Nm, DOB, Sex, Disease, Classification, datepart(Report_dt) as report_dt format=date9., Investigation_Start_Dt, Completed_dt, Batch_Dt, type1, wdrs_id, datepart(onset_dt) as onset_dt format=date9., 
 coalesce (datepart(onset_dt), datepart(report_dt)) as Event_date format=date9.
 FROM RECON.CDDB_Core_Data
-/*WHERE (report_dt>='01DEC2020'd and report_dt<='31DEC2021'd);*/
+WHERE (report_dt>='01JAN2019'd and report_dt<='31DEC2021'd);
 quit;
 
 
@@ -416,7 +414,7 @@ INVESTIGATION_STATUS	INVESTIGATION_STATUS_UNABLE_TO_C	INVESTIGATOR	LHJ_CASE_ID	L
 PATIENT_NOT_BE_INTERVIEWED	RACE	RACE_OTHER_RACE_SPECIFY	REPORTING_ADDRESS	REPORTING_CITY	REPORTING_COUNTRY	REPORTING_COUNTY	REPORTING_STATE	REPORTING_ZIPCODE	
 Street_1	Street_2	SEX_AT_BIRTH	WASHINGTON_STATE_RESIDENT	DIAGNOSIS_DATE	DISEASE_1	OCCUPATION	PATIENT_EMPLOYED_STUDENT	
 SCHOOL_NAME	TRAVEL_COMMENTS	TRAVEL_DATE_LEFT	TRAVEL_DATE_RETURNED	TRAVEL_DESTINATION	TRAVEL_OUT_OF	TREATMENT_RECEIVED	SYMPTOM_ONSET_DATE	Disease_WDRS	
-Disease	last_name_wdrs	first_name_wdrs	match1	SOURCE event_id_num ln_wdrs2 fn_wdrs2 disease_wdrs2 wdrs_id);
+Disease	last_name_wdrs	first_name_wdrs	match1	SOURCE event_id_num ln_wdrs2 fn_wdrs2 disease_wdrs2 wdrs_id cdc_event_date);
 	SET merged_core1_nomatch;
 	disease_wdrs2 = disease;
 	event_id_num = event_id+0;
@@ -483,6 +481,7 @@ Data merged_all2;
 	investigator_combined = "        ";
 	if cdi in ("CMS/ KAK" "CMS/ KAK") then investigator_combined = "CMS";
 	else if cdi in ("DMC/JC" "TSP/JC") then investigator_combined = "JC";
+	else if cdi in ("EK/HA" "HA, KWW" "HA/KW") then investigator_combined = "HA";
 	else if cdi in ("DC") then investigator_combined = "DMC";
 	else IF CDI NE "" then investigator_combined = CDI;
 	else if investigator = "Hilary Armstrong" then investigator_combined = "HA";
@@ -673,20 +672,19 @@ Data MERGED_ALL3;
 	reccomp_date = datepart(reccomp_dt);
 	batch_date = datepart(batch_dt);
 	report_date_wdrs = input(lhj_notification_date,mmddyy10.);
-	if report_date_wdrs = . then wdrs_date = event_date;
-	else wdrs_date = report_date_wdrs;
+	/*if report_date_wdrs = . then wdrs_date = event_date;
+	else wdrs_date = report_date_wdrs;*/
 	format birth_DATE MMDDYY10.;
 	FORMAT REPORT_DATE MMDDYY10.;
 	FORMAT COMPLETED_DATE MMDDYY10.;
 	FORMAT RECCOMP_DATE MMDDYY10.;
 	FORMAT BATCH_DATE MMDDYY10.;
 	format report_date_wdrs mmddyy10.;
-	format wdrs_date mmddyy10.;
+	/*format wdrs_date mmddyy10.;*/
 	if in_cddb = "Yes" and (classification_value = "Deleted" or classification_value = "State case") and classification_value ne " " then drop= 1;
 	if in_cddb = "Yes" AND (REPORT_DATE <'01JAN2021'd or report_Date > '31DEC2021'd) and report_date ne . then drop = 1;
-	if in_wdrs = "Yes" and (wdrs_date <'01JAN2021'd or wdrs_date > '31DEC2021'd) and wdrs_date ne . then drop = 1;
+	else if in_wdrs = "Yes" and in_cddb = "No" and (cdc_event_date <'01JAN2021'd or cdc_event_date > '31DEC2021'd) then drop = 1;
 run;
-
 
 
 /*Fixing some things*/
@@ -702,15 +700,19 @@ If classification_wdrs = "Not reportable" and lab_summary = "Negative labs only"
 *Removing Not reportable- Negative Labs Only with unassigned investigator;
 If reason = "WDRS missing case complete date" and has_cddb_wdrs_records = "No record found in CDDB" and lab_summary = "Negative labs only" then reason = "Negative labs only";
 If first_name_wdrs ="SAMPLING" and last_name_wdrs = "WATER" THEN reason = "Ok";
+If disease_combined="LYM" and report_date>='01OCT2021'd and Case_complete_date_WDRS=. then reason= "Pending DOH action";
 /*where drop ne=1;
 run;/
 /*2022 EXCEPTIONS CAN BE ADDED HERE */
 /*Case-specific*/
 If 	reason = "WDRS record doesn't match to CDDB" and (event_id="101803984" or event_id="102669670") then reason = "Ok";
-If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or "102682080") then reason="Ok";
+If reason = "WDRS missing case complete date" and (event_id ="104762501" or event_id="103337228" or event_id="103408158" or event_id= "102682080") then reason="Ok";
+If reason = "CDDB record doesn't match to WDRS" and (dbid="202112088" or dbid="202112095" or dbid="202112108" or dbid= "202112113" or dbid="202110676" 
+	or dbid="202111470" or dbid="202133372" or dbid="202110676" or dbid="202111470" or dbid="202133372" or dbid="202110123" or dbid="202110790" or dbid="202110809" 
+ 	or dbid= "202110885" or dbid="202111373" or dbid="202120691" or dbid="202120965") then reason="Ok";
+else if reason ="CDDB missing case complete date" and dbid="202131016" then reason="Ok";
 where drop ne 1;
 run;
-
 
 
 
@@ -748,7 +750,7 @@ create table merged_all5 as select 	event_id, dbid, disease, event_date, investi
 									cddb_incomplete,open_wdrs, open_cddb, disease_combined, investigator_combined, export_date, classification_cddb, classification_wdrs, 
 									case_complete_date_wdrs, investigation_status_wdrs, in_cddb, in_wdrs, name_match, classification_match, last_name_wdrs, 
 									first_name_wdrs, last_name_cddb, first_name_cddb, birthdate_wdrs, birthdate_cddb, open_cddb, open_wdrs,
-									cddb_incomplete, wdrs_incomplete, investigator_combined, disease_cddb, disease_wdrs, birthdate_match, lab_summary, former_investigator
+									cddb_incomplete, wdrs_incomplete, investigator_combined, disease_cddb, disease_wdrs, birthdate_match, lab_summary, former_investigator, cdc_event_date
 from merged_all4;
 quit;
 
@@ -780,18 +782,17 @@ run;
 
 data merged_all5;
  set merged_all5;
- if disease in ("HB1" "HC1") and assigned_to= "Admin" then
- assigned_to = "Investigator";
+ if disease in ("HB1" "HC1") and has_cddb_wdrs_records = "No record found in WDRS" and reason ne "OK" then assigned_to = "AI Team";
  if disease = "OTH" and assigned_to="Admin" then assigned_to = "AI Team";
  if disease = "OTH" and reason="Data mismatch - name" then assigned_to = "Admin";
  if dbid in ("202110292" "202110380" "202110500" "202110665" "202111036" "202111175" "202111411" "202111510" "202111752" 
-			"202111928" "202112050" "202112277") then assigned_to= "Investigator";
+			"202111928" "202112050" "202112277" "202120747") then assigned_to= "Investigator";
  if event_id in ("101666414" "102617496" "103778992") then assigned_to = "Investigator";
+ else if dbid= "202120838" then assigned_to="AI Team";
  run;
 
 
-
-proc freq data = merged_all5; tables disease; run; 
+proc freq data = merged_all5; tables reason; run; 
 
 PROC EXPORT DATA = MERGED_ALL5
 	dbms = csv replace
@@ -891,7 +892,7 @@ Data admin_tab3;
 Set admin_tab3 (keep= dbid comments);
 run;
 
-DATA MERGED_ALL5C (KEEP= event_id dbid disease investigator_combined report_date birthdate_wdrs birthdate_cddb reason);
+DATA MERGED_ALL5C (KEEP= event_id dbid disease investigator_combined report_date birthdate_wdrs birthdate_cddb assigned_to reason);
 	RETAIN event_id DBID disease investigator_combined report_date birthdate_cddb birthdate_wdrs reason comments;
 	SET MERGED_ALL5;
 	RUN;	
@@ -903,7 +904,7 @@ left join admin_tab3 as b
 on a.dbid = b.dbid; 
 quit;
 
-proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate"))
+proc export data= merged_all5C (where=(reason= "Data mismatch - birthdate" and assigned_to="Admin"))
 	dbms = xlsx replace
 	outfile = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\admin_reconciliation.xlsx";
 	sheet = "DOB Mismatch";
@@ -985,7 +986,7 @@ proc export data= merged_all5_AI (where=(assigned_to= "AI Team"))
 /*Create longitudinal dataset to show progress over time*/
 proc import datafile='S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\case_list_hist.csv' out=hist0
                dbms=csv replace;
-guessingrows=10000;
+guessingrows=max;
 run;
 
 /*If export date = today then drop*/
@@ -1032,7 +1033,7 @@ PROC EXPORT DATA = hist5
 	outfile =  "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Reports\case_list_hist.csv";
 RUN;
 
-
+proc freq data=merged_all5; tables reason; run;
 
 /*END PART 2*/
 
@@ -1042,8 +1043,11 @@ RUN;
 
 Data merged_all5;
 Set merged_all5; 
+CDI2=investigator_combined;
 If former_investigator = "Yes" then CDI = "ZZZ";
+ELSE IF investigator_combined = "BETH LIP" then cdi = "zzz";
 else If investigator_combined = "" Then CDI = "ZZY";
+
 ELSE CDI = investigator_combined;
 label reason = "Action needed";
 Comments = "                                                                                                  ";
@@ -1056,7 +1060,7 @@ proc freq data = merged_all5; tables CDI*priority / norow nocol nopercent nocum;
 %MACRO INV (CDI); 
 
 
-*/
+
 PROC IMPORT OUT = COMMENTS_C_&CDI
 	DATAFILE = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\&CDI..xlsx"
 	DBMS = XLSX replace;
@@ -1064,20 +1068,15 @@ PROC IMPORT OUT = COMMENTS_C_&CDI
 	GETNAMES=YES;
 RUN;
 
+
 PROC IMPORT OUT = COMMENTS_D_&CDI
 	DATAFILE = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\&CDI..xlsx"
 	DBMS = XLSX replace;
 	SHEET = "Mismatch - Classification";
 	GETNAMES=YES;
 RUN;
-/*
-PROC IMPORT OUT = COMMENTS_E_&CDI
-	DATAFILE = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\&CDI..xlsx"
-	DBMS = XLSX replace;
-	SHEET = "Mismatch - Name or DOB";
-	GETNAMES=YES;
-RUN;
-*/
+
+
 PROC IMPORT OUT = COMMENTS_F_&CDI
 	DATAFILE = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\&CDI..xlsx"
 	DBMS = XLSX replace;
@@ -1086,39 +1085,8 @@ PROC IMPORT OUT = COMMENTS_F_&CDI
 RUN;
 
 
-/*A*/
-/*
-Data comments_a_&CDI (drop = dbid comments);
-set comments_a_&CDI;
-dbid_num = dbid+0;
-event_id = input ("", $9.);
-where comments ne "";
-comments_long = input (comments, $250.);
-run;
-
-data comments_a_&CDI (keep = dbid event_id comments);
-set comments_a_&CDI;
-rename dbid_num = dbid;
-rename comments_long = comments;
-run;
-
-/*B*/
-/*
-Data comments_b_&CDI (drop = dbid comments);
-set comments_b_&CDI;
-dbid_num = dbid+0;
-event_id = input ("", $9.);
-where comments ne "";
-comments_long = input (comments, $250.);
-run;
-
-data comments_b_&CDI (keep = dbid event_id comments);
-set comments_b_&CDI;
-rename dbid_num = dbid;
-rename comments_long = comments;
-run;
-*/
 /*C*/
+
 Data comments_c_&CDI (drop = dbid comments);
 set comments_c_&CDI;
 dbid_num = dbid+0;
@@ -1132,9 +1100,10 @@ rename dbid_num = dbid;
 rename comments_long = comments;
 run;
 
-/*
+
 /*D*/
-/*
+
+
 Data comments_d_&CDI (drop = dbid comments);
 set comments_d_&CDI;
 dbid_num = dbid+0;
@@ -1148,27 +1117,8 @@ rename dbid_num = dbid;
 rename comments_long = comments;
 run;
 
-/*E*/
-/*
-Data comments_e_&CDI (drop = dbid comments);
-set comments_e_&CDI;
-dbid_num = dbid+0;
-where comments ne "";
-comments_long = input (comments, $250.);
-run;
-
-data comments_e_&CDI (keep = dbid event_id comments);
-set comments_e_&CDI;
-rename dbid_num = dbid;
-rename comments_long = comments;
-run;
-
-Data COMMENTS_&CDI (KEEP = DBID event_id COMMENTs);
-	Set COMMENTS_A_&CDI COMMENTS_B_&CDI COMMENTS_C_&CDI COMMENTS_D_&CDI COMMENTS_E_&CDI;
-	format comments $250.;
-RUN;
-*/
 /*F*/
+
 Data comments_f_&CDI (drop = dbid comments);
 set comments_f_&CDI;
 dbid_num = dbid+0;
@@ -1183,77 +1133,57 @@ rename comments_long = comments;
 run;
 
 Data COMMENTS_&CDI (KEEP = DBID event_id COMMENTs);
-	Set /*COMMENTS_A_&CDI COMMENTS_B_&CDI */COMMENTS_C_&CDI COMMENTS_D_&CDI /*COMMENTS_E_&CDI*/ COMMENTS_F_&CDI;
+	Set COMMENTS_C_&CDI COMMENTS_D_&CDI COMMENTS_F_&CDI;
 	format comments $250.;
 RUN;
 
 %MEND INV;
 
-%INV(ANT)
+%INV(AO)
 %INV(BD)
-%INV(CB)
-%INV(CH)
-%INV(DJB)
-%INV(DS)
+%INV(CMS)
+%INV(DMC)
 %INV(EB)
-%INV(EG)
 %INV(EK)
 %INV(HA)
 %INV(HG)
-%INV(JF)
+%INV(JC)
 %INV(JM)
-%INV(JNM)
 %INV(KAK)
-%INV(KW)
-%INV(LM)
-%INV(MB)
-%INV(MF)
+%INV(MR)
 %INV(NH)
+%INV(ORC)
 %INV(PM)
 %INV(QAL)
-%INV(RL)
-%INV(SC)
-%INV(SM)
-%INV(SS)
-%INV(TM)
+%INV(SG)
 %INV(TSP)
-%INV(VK)
 %INV(ZAS) 
+%INV(ZZY)
 %INV(ZZZ)
 
 /*Merge all the comments*/
 Data comments_merged;
 	Set 
-	comments_ANT
+	comments_AO
 	comments_BD
-	comments_CB
-	comments_CH
-	comments_DJB
-	comments_DS
+	comments_CMS
+	comments_DMC
 	comments_EB
-	comments_EG
 	comments_EK
 	comments_HA
 	comments_HG
-	comments_JF
+	comments_JC
 	comments_JM
-	comments_JNM
 	comments_KAK
-	comments_KW
-	comments_LM
-	comments_MB
-	comments_MF
+	comments_MR
 	comments_NH
+	comments_ORC
 	comments_PM
 	comments_QAL
-	comments_RL
-	comments_SC
-	comments_SM
-	comments_SS
-	comments_TM
+	comments_SG
 	comments_TSP
-	comments_VK
 	comments_ZAS
+	comments_ZZY
 	comments_ZZZ
 	;
 run;
@@ -1262,7 +1192,7 @@ Proc sort data = comments_merged nodupkey out = comments_merged2; by dbid event_
 
 Proc sql; 
 Create table comment_export 
-	as select 	a.dbid, a.cdi, a.event_id, a.first_name_cddb, a.last_name_cddb, a.disease_cddb, a.report_date, a.classification_cddb, a.completed_date, a.reccomp_date, a.reason, 
+	as select 	a.dbid, a.cdi, a.cdi2, a.event_id, a.first_name_cddb, a.last_name_cddb, a.disease_cddb, a.report_date, a.classification_cddb, a.completed_date, a.reccomp_date, a.reason, 
 				a.first_name_wdrs, a.last_name_wdrs, a.priority, 
 				b.comments
 	from merged_all5 as a
@@ -1287,7 +1217,7 @@ RUN;
 /*Create sheets for investigators*/
 /*Keep only if assigned to investigators*/
 
-Data merged_all5a ;
+Data merged_all5a (drop = comments);
 	Set merged_all5;
 	where assigned_to = "Investigator";
 run;
@@ -1301,52 +1231,28 @@ quit;
 
 Proc sort data = merged_all5b nodupkey out = merged_all5; by event_id dbid; quit;
 
-Data A (keep = dbid cdi first_name_cddb last_name_cddb disease_cddb report_date classification_cddb completed_date reccomp_date reason comments);
-retain dbid cdi first_name_cddb last_name_cddb report_date disease_cddb classification_cddb completed_date reccomp_date reason comments;
-Set merged_all5a;
-where priority = 1;
-RUN;
-
-Data B (keep = dbid cdi first_name_cddb last_name_cddb disease_cddb report_date classification_cddb completed_date reccomp_date reason comments);
-retain dbid cdi first_name_cddb last_name_cddb report_date disease_cddb classification_cddb completed_date reccomp_date reason comments;
-Set merged_all5a;
-where priority = 2;
-run;
-
-Data C (keep = dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs 
+Data C (keep = dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs 
 		classification_wdrs case_complete_date_wdrs investigation_status_wdrs reason lab_summary comments);
-		retain dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs
+		retain dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs
 		classification_wdrs case_complete_date_wdrs investigation_status_wdrs reason lab_summary comments;
-Set merged_all5a;
+Set merged_all5;
 Where priority = 3;
 run;
 
-Data D (keep = dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb first_name_wdrs last_name_wdrs disease_wdrs classification_wdrs reason comments);
-		retain dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb first_name_wdrs last_name_wdrs disease_wdrs classification_wdrs reason comments;
-Set merged_all5a;
+Data D (keep = dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb first_name_wdrs last_name_wdrs disease_wdrs classification_wdrs reason comments);
+		retain dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb first_name_wdrs last_name_wdrs disease_wdrs classification_wdrs reason comments;
+Set merged_all5;
 Where priority = 4;
 Run;
 
-Data F (keep = dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs 
+Data F (keep = dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs 
 		classification_wdrs case_complete_date_wdrs investigation_status_wdrs reason lab_summary comments);
-		retain dbid event_id cdi report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs
+		retain dbid event_id cdi cdi2 report_date first_name_cddb last_name_cddb disease_cddb classification_cddb completed_date reccomp_date first_name_wdrs last_name_wdrs disease_wdrs
 		classification_wdrs case_complete_date_wdrs investigation_status_wdrs reason lab_summary comments;
-Set merged_all5a;
+Set merged_all5;
 Where priority = 7;
 run;
 
-
-PROC EXPORT DATA = A
-	DBMS=xlsx label replace
-	outfile = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\Everyone";
-	SHEET = "Needs WDRS entry";
-RUN;
-
-PROC EXPORT DATA = B
-	DBMS=xlsx label replace
-	outfile = "S:\Analytics and Informatics Team\WDRS\Data Quality\Reconciliation\2022\Investigator spreadsheets\Everyone";
-	SHEET = "Needs WDRS entry-not a case";
-RUN;
 
 PROC EXPORT DATA = C
 	DBMS=xlsx label replace
@@ -1403,11 +1309,9 @@ RUN;
 
 %MEND INV;
 /*Investigators to include */
-
 %INV(AO)
 %INV(BD)
 %INV(CMS)
-%INV(DJ)
 %INV(DMC)
 %INV(EB)
 %INV(EK)
@@ -1423,6 +1327,6 @@ RUN;
 %INV(QAL)
 %INV(SG)
 %INV(TSP)
-%INV(ZAS)
+%INV(ZAS) 
 %INV(ZZY)
 %INV(ZZZ)
