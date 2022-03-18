@@ -1,7 +1,7 @@
 /**********************************************************
 RECONCILIATION TABLEAU DASHBOARD
 Author: Jenny Lenahan
-Last modified: 3/14/22 (JL)
+Last modified: 3/18/22 (JL)(AY)
 
 
 Data sources:
@@ -160,6 +160,7 @@ DATA WDRS_ALL;
 	IF Disease_WDRS = "Shigellosis" THEN Disease = "SHI";
 	IF Disease_WDRS = "Tetanus" THEN Disease = "TET";
 	*IF Disease_WDRS = "Tickborne (excludes Lyme, Relapsing)" THEN Disease = "QFE" or "OTH" or "BAB"...;
+	IF Disease_WDRS = "Trichinosis" THEN Disease = "TRI";
 	IF Disease_WDRS = "Tularemia" THEN Disease = "TUL";
 	IF Disease_WDRS = "Typhoid fever" THEN Disease = "TYP";
 	IF Disease_WDRS = "Vibriosis" THEN Disease = "VIB";
@@ -193,6 +194,7 @@ Data WDRS_ALL;
 	if event_id = "104219989" then lhj_case_id = "202220053";
 	if event_id = "104270087" then lhj_case_id = "202220060";
 	if event_id = "104384842" then lhj_case_id = "202220091";
+	else if event_id = "104776789" then lhj_case_id = "202220211";
 
 RUN;
 
@@ -479,6 +481,7 @@ Data merged_all2;
 	investigator_combined = "        ";
 	if cdi in ("CMS/ KAK" "CMS/ KAK") then investigator_combined = "CMS";
 	else if cdi in ("DMC/JC" "TSP/JC") then investigator_combined = "JC";
+	else if cdi in ("EK/HA" "HA, KWW" "HA/KW") then investigator_combined = "HA";
 	else if cdi in ("DC") then investigator_combined = "DMC";
 	else IF CDI NE "" then investigator_combined = CDI;
 	else if investigator = "Hilary Armstrong" then investigator_combined = "HA";
@@ -684,7 +687,6 @@ Data MERGED_ALL3;
 run;
 
 
-
 /*Fixing some things*/
 Data merged_all4a;
 Set merged_all3;
@@ -698,6 +700,7 @@ If classification_wdrs = "Not reportable" and lab_summary = "Negative labs only"
 *Removing Not reportable- Negative Labs Only with unassigned investigator;
 If reason = "WDRS missing case complete date" and has_cddb_wdrs_records = "No record found in CDDB" and lab_summary = "Negative labs only" then reason = "Negative labs only";
 If first_name_wdrs ="SAMPLING" and last_name_wdrs = "WATER" THEN reason = "Ok";
+If disease_combined="LYM" and report_date>='01OCT2021'd and Case_complete_date_WDRS=. then reason= "Pending DOH action";
 /*where drop ne=1;
 run;/
 /*2022 EXCEPTIONS CAN BE ADDED HERE */
@@ -707,7 +710,7 @@ If reason = "WDRS missing case complete date" and (event_id ="104762501" or even
 If reason = "CDDB record doesn't match to WDRS" and (dbid="202112088" or dbid="202112095" or dbid="202112108" or dbid= "202112113" or dbid="202110676" 
 	or dbid="202111470" or dbid="202133372" or dbid="202110676" or dbid="202111470" or dbid="202133372" or dbid="202110123" or dbid="202110790" or dbid="202110809" 
  	or dbid= "202110885" or dbid="202111373" or dbid="202120691" or dbid="202120965") then reason="Ok";
-If reason ="CDDB missing case complete date" and dbid="202131016" then reason="Ok";
+else if reason ="CDDB missing case complete date" and dbid="202131016" then reason="Ok";
 where drop ne 1;
 run;
 
@@ -785,7 +788,7 @@ data merged_all5;
  if dbid in ("202110292" "202110380" "202110500" "202110665" "202111036" "202111175" "202111411" "202111510" "202111752" 
 			"202111928" "202112050" "202112277" "202120747") then assigned_to= "Investigator";
  if event_id in ("101666414" "102617496" "103778992") then assigned_to = "Investigator";
- if dbid= "202120838" then assigned_to="AI Team";
+ else if dbid= "202120838" then assigned_to="AI Team";
  run;
 
 
